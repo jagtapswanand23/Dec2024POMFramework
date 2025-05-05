@@ -1,0 +1,29 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+
+<suite name="Opencart App Tet Regression Suite" verbose="4" thread-count="5" parallel="tests">
+    <listeners>
+        <listener class-name="com.aventstack.chaintest.plugins.ChainTestListener"/>
+        <listener class-name="com.qa.opencart.listeners.TestAllureListener"/>
+        <!-- <listener class-name="com.qa.opencart.listeners.AnnotationTransformer" /> -->
+
+    </listeners>
+    <test name="Login Page Test">
+        <parameter name="browser" value="chrome"/>
+        <classes>
+            <class name="com.qa.opencart.tests.LoginPageTest"/>
+        </classes>
+    </test>
+    <test name="Account Page Test">
+        <parameter name="browser" value="chrome"/>
+        <classes>
+            <class name="com.qa.opencart.tests.AccountsPageTest"/>
+        </classes>
+    </test>
+
+    <test name="Search Page Test">
+        <parameter name="browser" value="chrome"/>
+        <classes>
+            <class name="com.qa.opencart.tests.SearchTest"/>
+        </classes>
+    </test>
+</suite>
