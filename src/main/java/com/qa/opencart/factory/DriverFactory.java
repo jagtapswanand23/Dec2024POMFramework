@@ -6,7 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 
-import io.qameta.allure.Step;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -19,31 +20,41 @@ import com.aventstack.chaintest.plugins.ChainTestListener;
 import com.qa.opencart.exceptions.BrowserException;
 import com.qa.opencart.exceptions.FrameworkException;
 
+import io.qameta.allure.Step;
 
 public class DriverFactory {
+
+    WebDriver driver;
+    Properties prop;  //its coming from JAVA to read the properties from file
+    OptionsManager optionsManager;
 
     /**
      * Its coming from JAVA
      * Create local copy of dirver
      */
     public static ThreadLocal<WebDriver> tlDriver = new ThreadLocal<WebDriver>();
-    WebDriver driver;
-    Properties prop;  //its coming from JAVA to read the properties from file
-    OptionsManager optionsManager;
+    public static String highlight;
+
+    private static final Logger log = LogManager.getLogger(DriverFactory.class);
+    //warn, info,error,fatal
 
     /**
      * getDriver: get the local thread copy of the driver
      */
 
     public static WebDriver getDriver() {
+
         return tlDriver.get();
     }
 
     @Step("init the driver with properties:{0}")
     public WebDriver initDriver(Properties prop) {
+
+        log.info("properties: "+prop);
         // passing prop it will help us to get all values from properties file
         String browserName = prop.getProperty("browser");
-        System.out.println("browser name : " + browserName);
+//        System.out.println("browser name : " + browserName);
+        log.info("browser name : " + browserName);
         optionsManager = new OptionsManager(prop);
 
         /**
@@ -64,7 +75,8 @@ public class DriverFactory {
 //                driver = new EdgeDriver(optionsManager.getEdgeOptions());
                 break;
             default:
-                System.out.println("Please pass the valid browser name... " + browserName);
+//                System.out.println("Please pass the valid browser name... " + browserName);
+                log.error("Please pass the valid browser name... " + browserName);
                 throw new BrowserException("==Invalid Browser==");
         }
         getDriver().get(prop.getProperty("url"));  //login page url
@@ -86,10 +98,13 @@ public class DriverFactory {
 
         try {
             if (envName == null) {
-                System.out.println("Your env is null. hence running the test on QA env..");
+//                System.out.println("Your env is null. hence running the test on QA env..");
+                log.warn("Your env is null. hence running the test on QA env..");
                 ip = new FileInputStream("./src/test/resources/config/qa.config.properties");
             } else {
-                System.out.println("Running tests on env: " + envName);
+
+//                System.out.println("Running tests on env: " + envName);
+                log.info("Running tests on env: " + envName);
                 switch (envName.toLowerCase().trim()) {
                     case "qa":
                         ip = new FileInputStream("./src/test/resources/config/qa.config.properties");
@@ -98,6 +113,7 @@ public class DriverFactory {
                         ip = new FileInputStream("./src/test/resources/config/stage.config.properties");
                         break;
                     default:
+                        log.error("--invalid env name--- "+envName);
                         throw new FileNotFoundException("===INVALID ENV NAME=== " + envName);
                 }
             }

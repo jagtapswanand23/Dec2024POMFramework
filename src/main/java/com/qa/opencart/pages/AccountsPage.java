@@ -1,7 +1,10 @@
 package com.qa.opencart.pages;
 
+import com.qa.opencart.factory.DriverFactory;
 import com.qa.opencart.utils.ElementUtil;
 import io.qameta.allure.Step;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -18,6 +21,9 @@ public class AccountsPage {
     private WebDriver driver;
     private ElementUtil eleUtil;
 
+    private static final Logger log = LogManager.getLogger(AccountsPage.class);
+
+
     public AccountsPage(WebDriver driver) {
         this.driver = driver;
         eleUtil = new ElementUtil(driver);
@@ -26,14 +32,14 @@ public class AccountsPage {
     @Step("getting account page title")
     public String getAccPageTitle() {
         String title = eleUtil.waitForTitleIs(HOME_PAGE_TITLE, DEFAULT_TIMEOUT);
-        System.out.println("Home page title " + title);
+        log.info("Home page title " + title);
         return title;
     }
 
     @Step("getting account page url")
     public String getAccPageURL() {
         String url = eleUtil.waitForURLContains(HOME_PAGE_FRACTION_URL, DEFAULT_TIMEOUT);
-        System.out.println("HOME page url " + url);
+        log.info("HOME page url " + url);
         return url;
     }
 
@@ -50,7 +56,8 @@ public class AccountsPage {
 
     @Step("perform search :{0}")
     public SearchResultsPage doSearch(String searchKey) {
-        System.out.println("Search key is: "+searchKey);
+//        System.out.println("Search key is: "+searchKey);
+        log.info("Search key is: "+searchKey);
         eleUtil.doSendKeys(search, searchKey);
         eleUtil.doClick(searchIcon);
         return new SearchResultsPage(driver);

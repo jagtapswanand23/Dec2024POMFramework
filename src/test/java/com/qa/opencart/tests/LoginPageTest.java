@@ -19,9 +19,11 @@ public class LoginPageTest extends BaseTest {
     @Owner("Swanand J")
     @Test(description = "checking login title")
     public void loginPageTitleTest() {
+
         String actTitle = loginPage.getLoginPageTitle();
         ChainTestListener.log("checking login page title: " + actTitle);
         Assert.assertEquals(actTitle, LOGIN_PAGE_TITLE);
+
     }
 
     @Description("checking open cart login page title..")
