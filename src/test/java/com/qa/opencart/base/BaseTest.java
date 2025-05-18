@@ -45,10 +45,10 @@ public class BaseTest {
         loginPage = new LoginPage(driver);
     }
 
-    @BeforeMethod
-    public void beforeMethod(ITestNGMethod result) {
-        LogUtil.info("-------------starting test case==== " + result.getMethodName());
-    }
+//    @BeforeMethod
+//    public void beforeMethod(ITestNGMethod result) {
+//        LogUtil.info("-------------starting test case==== " + result.getMethodName());
+//    }
 
     @AfterMethod //will be running after each @test method
     public void attachScreenshot(ITestResult result) {
