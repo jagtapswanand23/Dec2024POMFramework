@@ -1,71 +1,107 @@
-pipeline{
-
+pipeline
+{
     agent any
 
-    stages{
+    tools{
+        maven 'maven'
+        }
 
-        stage("build"){
-            steps{
-                echo("build the project")
+    stages
+    {
+        stage('Build')
+        {
+            steps
+            {
+                 git 'https://github.com/jglick/simple-maven-project-with-tests.git'
+                 bat "mvn -Dmaven.test.failure.ignore=true clean package"
+            }
+            post
+            {
+                success
+                {
+                    junit '**/target/surefire-reports/TEST-*.xml'
+                    archiveArtifacts 'target/*.jar'
+                }
             }
         }
 
 
-        stage("Run Unit test"){
-            steps{
-                echo("run UTs")
-            }
-        }
-
-        stage("Run Integration test"){
-            steps{
-                echo("run ITs")
-            }
-        }
-
-        stage("Deploy to dev"){
-            steps{
-                echo("deploy to dev")
-            }
-        }
 
         stage("Deploy to QA"){
             steps{
-                echo("deploy to QA")
+                echo("deploy to qa done")
             }
         }
 
 
 
-        stage("Run regression test cases on QA"){
+
+        stage('Regression Automation Tests') {
+            steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    git 'https://github.com/jagtapswanand23/Dec2024POMFramework.git'
+                    bat "mvn clean test -Dsurefire.suiteXmlFiles=src/test/resources/testrunners/testng_qa.xml -Denv=qa"
+
+                }
+            }
+        }
+
+
+        stage('Publish Allure Reports') {
+           steps {
+                script {
+                    allure([
+                        includeProperties: false,
+                        jdk: '',
+                        properties: [],
+                        reportBuildPolicy: 'ALWAYS',
+                        results: [[path: '/allure-results']]
+                    ])
+                }
+            }
+        }
+
+
+        stage('Publish ChainTest Report'){
             steps{
-                echo("Run test cases on QA")
+                     publishHTML([allowMissing: false,
+                                  alwaysLinkToLastBuild: false,
+                                  keepAll: true,
+                                  reportDir: 'target/chaintest',
+                                  reportFiles: 'Index.html',
+                                  reportName: 'HTML Regression ChainTest Report',
+                                  reportTitles: ''])
             }
         }
 
-        stage("Deploy to stage"){
+        stage("Deploy to Stage"){
             steps{
-                echo("deploy to stage")
+                echo("deploy to Stage")
             }
         }
 
-        stage("Run sanity test cases on Stage"){
-            steps{
-                echo("Run sanity test cases on Stage")
+        stage('Sanity Automation Test') {
+            steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    git 'https://github.com/jagtapswanand23/Dec2024POMFramework.git'
+                    sh "mvn clean test -Dsurefire.suiteXmlFiles=src/test/resources/testrunners/testng_stage.xml -Denv=stage"
+
+                }
             }
         }
 
-        stage("Deploy to uat"){
+        stage('Publish sanity ChainTest Report'){
             steps{
-                echo("deploy to stage")
+                     publishHTML([allowMissing: false,
+                                  alwaysLinkToLastBuild: false,
+                                  keepAll: true,
+                                  reportDir: 'target/chaintest',
+                                  reportFiles: 'Index.html',
+                                  reportName: 'HTML Stage ChainTest Report',
+                                  reportTitles: ''])
             }
         }
 
-        stage("Run sanity test cases on uat"){
-            steps{
-                echo("Run sanity test cases on UAT")
-            }
-        }
 
         stage("Deploy to PROD"){
             steps{
@@ -74,8 +110,5 @@ pipeline{
         }
 
 
-
     }
-
-
 }
