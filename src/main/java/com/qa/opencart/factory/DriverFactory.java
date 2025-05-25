@@ -1,11 +1,7 @@
 package com.qa.opencart.factory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.Properties;
-
+import com.qa.opencart.exceptions.BrowserException;
+import io.qameta.allure.Step;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.OutputType;
@@ -14,28 +10,29 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.safari.SafariDriver;
 
-import com.aventstack.chaintest.plugins.ChainTestListener;
-import com.qa.opencart.exceptions.BrowserException;
-import com.qa.opencart.exceptions.FrameworkException;
-
-import io.qameta.allure.Step;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Properties;
 
 public class DriverFactory {
 
-    WebDriver driver;
-    Properties prop;  //its coming from JAVA to read the properties from file
-    OptionsManager optionsManager;
-
+    private static final Logger log = LogManager.getLogger(DriverFactory.class);
     /**
      * Its coming from JAVA
      * Create local copy of dirver
      */
     public static ThreadLocal<WebDriver> tlDriver = new ThreadLocal<WebDriver>();
     public static String highlight;
-
-    private static final Logger log = LogManager.getLogger(DriverFactory.class);
+    WebDriver driver;
+    Properties prop;  //its coming from JAVA to read the properties from file
+    OptionsManager optionsManager;
     //warn, info,error,fatal
 
     /**
@@ -47,10 +44,19 @@ public class DriverFactory {
         return tlDriver.get();
     }
 
+    /**
+     * takescreenshot
+     */
+
+    public static File getScreenshotFile() {
+        File srcFile = ((TakesScreenshot) getDriver()).getScreenshotAs(OutputType.FILE);// temp dir
+        return srcFile;
+    }
+
     @Step("init the driver with properties:{0}")
     public WebDriver initDriver(Properties prop) {
 
-        log.info("properties: "+prop);
+        log.info("properties: " + prop);
         // passing prop it will help us to get all values from properties file
         String browserName = prop.getProperty("browser");
 //        System.out.println("browser name : " + browserName);
@@ -63,17 +69,35 @@ public class DriverFactory {
          */
         switch (browserName.toLowerCase().trim()) {
             case "chrome":
-                tlDriver.set(new ChromeDriver(optionsManager.getChromeOptions()));
+
+                if (Boolean.parseBoolean(prop.getProperty("remote"))) {
+                    initRemoteDriver("chrome");
+                } else {
+                    //run it on local machine
+                    tlDriver.set(new ChromeDriver(optionsManager.getChromeOptions()));
 //                driver = new ChromeDriver(optionsManager.getChromeOptions());
+                }
                 break;
             case "firefox":
-                tlDriver.set(new FirefoxDriver(optionsManager.getFirfoxOptions()));
-//                driver = new FirefoxDriver(optionsManager.getFirfoxOptions());
+                if (Boolean.parseBoolean(prop.getProperty("remote"))) {
+                    initRemoteDriver("firefox");
+                } else {
+                    //run it on local machine
+                    tlDriver.set(new FirefoxDriver(optionsManager.getFirfoxOptions()));
+//                driver = new ChromeDriver(optionsManager.getFirfoxOptions());
+                }
                 break;
             case "edge":
-                tlDriver.set(new EdgeDriver(optionsManager.getEdgeOptions()));
-//                driver = new EdgeDriver(optionsManager.getEdgeOptions());
+                if (Boolean.parseBoolean(prop.getProperty("remote"))) {
+                    initRemoteDriver("edge");
+                } else {
+                    //run it on local machine
+                    tlDriver.set(new EdgeDriver(optionsManager.getEdgeOptions()));
+//                driver = new ChromeDriver(optionsManager.getEdgeOptions());
+                }
                 break;
+            case "safari":
+                tlDriver.set(new SafariDriver());
             default:
 //                System.out.println("Please pass the valid browser name... " + browserName);
                 log.error("Please pass the valid browser name... " + browserName);
@@ -83,6 +107,41 @@ public class DriverFactory {
         getDriver().manage().window().maximize();
         getDriver().manage().deleteAllCookies();
         return getDriver();
+    }
+
+    // run it on remote grid
+    private void initRemoteDriver(String browserName) {
+
+        switch (browserName) {
+
+            case "chrome":
+                try {
+                    // run on remote or selenium grid server / aws / machine
+                    tlDriver.set(new RemoteWebDriver(new URL(prop.getProperty("huburl")), optionsManager.getChromeOptions()));
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                }
+                break;
+            case "firefox":
+                try {
+                    // run on remote or selenium grid server / aws / machine
+                    tlDriver.set(new RemoteWebDriver(new URL(prop.getProperty("huburl")), optionsManager.getFirfoxOptions()));
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                }
+                break;
+            case "edge":
+                try {
+                    // run on remote or selenium grid server / aws / machine
+                    tlDriver.set(new RemoteWebDriver(new URL(prop.getProperty("huburl")), optionsManager.getEdgeOptions()));
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                }
+                break;
+            default:
+                System.out.println("this browser is not supported on selenium grid server : " + browserName);
+                throw new BrowserException("INVALID BROWSER==");
+        }
     }
 
     /**
@@ -113,7 +172,7 @@ public class DriverFactory {
                         ip = new FileInputStream("./src/test/resources/config/stage.config.properties");
                         break;
                     default:
-                        log.error("--invalid env name--- "+envName);
+                        log.error("--invalid env name--- " + envName);
                         throw new FileNotFoundException("===INVALID ENV NAME=== " + envName);
                 }
             }
@@ -128,15 +187,6 @@ public class DriverFactory {
         }
         return prop;  // return the prop
     }
-
-        /**
-         * takescreenshot
-         */
-
-        public static File getScreenshotFile() {
-            File srcFile = ((TakesScreenshot) getDriver()).getScreenshotAs(OutputType.FILE);// temp dir
-            return srcFile;
-        }
 
 //        public static byte[] getScreenshotByte () {
 //            return ((TakesScreenshot) getDriver()).getScreenshotAs(OutputType.BYTES);// temp dir
